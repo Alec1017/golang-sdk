@@ -18,9 +18,14 @@ func NewClient(
 	options ...ClientOption,
 ) *Client {
 
+	// create a new client context
+	clientCtx := client.Context{
+		TxConfig: NewTxConfig(),
+	}
+
 	// Create a new client
 	client := Client{
-		clientCtx: client.Context{},
+		clientCtx: clientCtx,
 	}
 
 	// set up the client with the node URI and some defaults

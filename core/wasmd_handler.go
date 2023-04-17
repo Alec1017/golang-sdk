@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	wasmdtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,6 +20,7 @@ func (c *Client) InstantiateContract(
 ) (*sdk.TxResponse, error) {
 
 	// Create a new transaction builder
+	fmt.Println(c.clientCtx.TxConfig)
 	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
 
 	// Get the sender address from the private key
