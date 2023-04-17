@@ -12,7 +12,7 @@ import (
 )
 
 func (c *Client) IsProposalHandled(proposalId string) bool {
-	client := govtypes.NewQueryClient(c.txConfig.grpcConn)
+	client := govtypes.NewQueryClient(c.clientCtx)
 	proposalID, err := strconv.ParseUint(proposalId, 10, 64)
 	if err != nil {
 		panic(err)
@@ -22,7 +22,7 @@ func (c *Client) IsProposalHandled(proposalId string) bool {
 }
 
 func (c *Client) Vote(proposalId string) error {
-	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
+	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
 	from := sdk.AccAddress(c.privKey.PubKey().Address())
 	proposalID, err := strconv.ParseUint(proposalId, 10, 64)
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *Client) Vote(proposalId string) error {
 }
 
 func (c *Client) GetBankBalance(account string, denom string) sdk.Coin {
-	client := banktypes.NewQueryClient(c.txConfig.grpcConn)
+	client := banktypes.NewQueryClient(c.clientCtx)
 	address, err := sdk.AccAddressFromBech32(account)
 	if err != nil {
 		panic(err)

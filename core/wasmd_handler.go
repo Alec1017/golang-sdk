@@ -9,45 +9,91 @@ import (
 
 // This function takes custom instantiateMsg and instantiates cosmwasm contract
 // it returns the instantiated contract address if succeeds
-func (c *Client) InstantiateContract(code uint64, instantiateMsg string) (*sdk.TxResponse, error) {
-	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
-	adminAddr := sdk.AccAddress(c.privKey.PubKey().Address()).String()
+func (c *Client) InstantiateContract(
+	code uint64,
+	label string,
+	instantiateMsg string,
+	funds sdk.Coins,
+	noAdmin bool,
+	options ...TxOption,
+) (*sdk.TxResponse, error) {
+
+	// Create a new transaction builder
+	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+
+	// Get the sender address from the private key
+	senderAddr := sdk.AccAddress(c.privKey.PubKey().Address()).String()
+
+	// Construct the contract instantiation message
 	msg := wasmdtypes.MsgInstantiateContract{
-		Sender: adminAddr,
-		Admin:  adminAddr,
+		Sender: senderAddr,
 		CodeID: code,
-		Label:  "dex",
+		Label:  label,
 		Msg:    asciiDecodeString(instantiateMsg),
-		Funds: []sdk.Coin{
-			sdk.NewCoin("usei", sdk.NewInt(100000)),
-		},
+		Funds:  funds,
 	}
-	_ = txBuilder.SetMsgs(&msg)
-	addGasFee(&txBuilder, c.txConfig.gasLimit, c.txConfig.gasFee)
+
+	// set the sender as an admin address if specified
+	if !noAdmin {
+		msg.Admin = senderAddr
+	}
+
+	// set the message on the transaction builder
+	err := txBuilder.SetMsgs(&msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// handle each transaction option passed in
+	for _, option := range options {
+		option(&txBuilder)
+	}
+
+	// Sign and send the transaction
 	return c.signAndSendTx(&txBuilder)
 }
 
 // This function takes custom executeMsg and call designated cosmwasm contract execute endpoint
 // it returns the instantiated contract address if succeeds
 // Input fund example: "1000usei". Empty string can be passed if this execution doesn't intend to attach any fund.
-func (c *Client) ExecuteContract(contractAddr string, code uint64, executeMsg string, fund string) (*sdk.TxResponse, error) {
-	amount, _ := sdk.ParseCoinsNormalized(fund)
-	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
+func (c *Client) ExecuteContract(
+	contractAddr string,
+	code uint64,
+	executeMsg string,
+	funds sdk.Coins,
+	options ...TxOption,
+) (*sdk.TxResponse, error) {
+
+	// Create a new transaction builder
+	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+
+	// Get the sender address from the private key
+	senderAddr := sdk.AccAddress(c.privKey.PubKey().Address()).String()
+
 	msg := wasmdtypes.MsgExecuteContract{
-		Sender:   sdk.AccAddress(c.privKey.PubKey().Address()).String(),
+		Sender:   senderAddr,
 		Contract: contractAddr,
 		Msg:      asciiDecodeString(executeMsg),
-		Funds:    amount,
+		Funds:    funds,
 	}
 
-	_ = txBuilder.SetMsgs(&msg)
-	addGasFee(&txBuilder, c.txConfig.gasLimit, c.txConfig.gasFee)
+	// set the message on the transaction builder
+	err := txBuilder.SetMsgs(&msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// handle each transaction option passed in
+	for _, option := range options {
+		option(&txBuilder)
+	}
+
 	return c.signAndSendTx(&txBuilder)
 }
 
 // This function takes custom queryMsg and get the corresponding state from the contract
 func (c *Client) QueryContract(queryMsg string, contractAddr string) (*wasmdtypes.QuerySmartContractStateResponse, error) {
-	client := wasmdtypes.NewQueryClient(c.txConfig.grpcConn)
+	client := wasmdtypes.NewQueryClient(c.clientCtx)
 	res, err := client.SmartContractState(
 		context.Background(),
 		&wasmdtypes.QuerySmartContractStateRequest{

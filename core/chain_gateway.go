@@ -1,13 +1,11 @@
 package client
 
 import (
-	"context"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -35,7 +33,7 @@ func (c *Client) signTx(txBuilder *client.TxBuilder) error {
 	sigV2 := signing.SignatureV2{
 		PubKey: c.privKey.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  c.encodingConfig.TxConfig.SignModeHandler().DefaultMode(),
+			SignMode:  c.clientCtx.TxConfig.SignModeHandler().DefaultMode(),
 			Signature: nil,
 		},
 		Sequence: seqNum,
@@ -47,16 +45,16 @@ func (c *Client) signTx(txBuilder *client.TxBuilder) error {
 
 	sigsV2 = []signing.SignatureV2{}
 	signerData := xauthsigning.SignerData{
-		ChainID:       CHAIN_ID,
+		ChainID:       c.clientCtx.ChainID,
 		AccountNumber: accountNum,
 		Sequence:      seqNum,
 	}
 	sigV2, _ = clienttx.SignWithPrivKey(
-		c.encodingConfig.TxConfig.SignModeHandler().DefaultMode(),
+		c.clientCtx.TxConfig.SignModeHandler().DefaultMode(),
 		signerData,
 		*txBuilder,
 		c.privKey,
-		c.encodingConfig.TxConfig,
+		c.clientCtx.TxConfig,
 		seqNum,
 	)
 	sigsV2 = append(sigsV2, sigV2)
@@ -68,25 +66,18 @@ func (c *Client) signTx(txBuilder *client.TxBuilder) error {
 }
 
 func (c *Client) sendTx(txBuilder *client.TxBuilder) (*sdk.TxResponse, error) {
-	client := typestx.NewServiceClient(c.txConfig.grpcConn)
 
-	txBytes, err := c.encodingConfig.TxConfig.TxEncoder()((*txBuilder).GetTx())
+	txBytes, err := c.clientCtx.TxConfig.TxEncoder()((*txBuilder).GetTx())
 	if err != nil {
 		return nil, err
 	}
 
-	grpcRes, err := client.BroadcastTx(
-		context.Background(),
-		&typestx.BroadcastTxRequest{
-			Mode:    typestx.BroadcastMode_BROADCAST_MODE_BLOCK,
-			TxBytes: txBytes,
-		},
-	)
+	res, err := c.clientCtx.BroadcastTx(txBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	return grpcRes.TxResponse, nil
+	return res, nil
 }
 
 func (c *Client) getAccountNumberSequenceNumber() (uint64, uint64, error) {
@@ -96,19 +87,12 @@ func (c *Client) getAccountNumberSequenceNumber() (uint64, uint64, error) {
 		return 0, 0, err
 	}
 	accountRetriever := authtypes.AccountRetriever{}
-	cl, err := client.NewClientFromNode(NODE_URI)
-	if err != nil {
-		return 0, 0, err
-	}
-	context := client.Context{}
-	context = context.WithNodeURI(NODE_URI)
-	context = context.WithClient(cl)
-	context = context.WithInterfaceRegistry(c.encodingConfig.InterfaceRegistry)
-	account, seq, err := accountRetriever.GetAccountNumberSequence(context, address)
+
+	account, seq, err := accountRetriever.GetAccountNumberSequence(c.clientCtx, address)
 	if err != nil {
 		time.Sleep(5 * time.Second)
 		// retry once after 5 seconds
-		account, seq, err = accountRetriever.GetAccountNumberSequence(context, address)
+		account, seq, err = accountRetriever.GetAccountNumberSequence(c.clientCtx, address)
 		if err != nil {
 			panic(err)
 		}

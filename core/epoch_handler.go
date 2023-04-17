@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) GetCurrentEpoch() uint64 {
-	client := epochtypes.NewQueryClient(c.txConfig.grpcConn)
+	client := epochtypes.NewQueryClient(c.clientCtx)
 	res, err := client.Epoch(context.Background(), &epochtypes.QueryEpochRequest{})
 	if err != nil {
 		panic(err)

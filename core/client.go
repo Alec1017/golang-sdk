@@ -1,51 +1,81 @@
 package client
 
 import (
+	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"google.golang.org/grpc"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 type Client struct {
-	privKey        cryptotypes.PrivKey
-	encodingConfig *EncodingConfig
-	txConfig       *TxConfig
+	privKey   cryptotypes.PrivKey
+	clientCtx client.Context
 }
 
-func NewClientWithDefaultConfig(key cryptotypes.PrivKey) *Client {
-	// establish grpc connection
-	grpcConn, err := grpc.Dial(
-		"127.0.0.1:9090",
-		grpc.WithInsecure(),
-	)
+type ClientOption func(c *Client)
+
+func NewClient(
+	node string,
+	options ...ClientOption,
+) *Client {
+
+	// Create a new client
+	client := Client{
+		clientCtx: client.Context{},
+	}
+
+	// set up the client with the node URI and some defaults
+	client.WithNode(node)
+	client.WithBroadcastMode("block")
+	client.WithChainID(DEFAULT_CHAIN_ID)
+
+	// handle each option passed in
+	for _, option := range options {
+		option(&client)
+	}
+
+	return &client
+}
+
+func (c *Client) WithNode(nodeURI string) {
+
+	nodeClient, err := rpchttp.New(nodeURI)
 	if err != nil {
 		panic(err)
 	}
 
-	txConfig := NewTxConfig(
-		"tcp://localhost:26657",
-		"http://localhost:8088",
-		"sei-chain",
-		2000000,
-		sdk.NewCoin("usei", sdk.NewInt(100000)),
-		grpcConn,
-	)
-
-	return NewClient(key, txConfig, NewDefaultEncodingConfig())
+	c.clientCtx = c.clientCtx.
+		WithNodeURI(nodeURI).
+		WithClient(nodeClient)
 }
 
-func NewClient(
-	key cryptotypes.PrivKey,
-	txConfig *TxConfig,
-	encodingConfig *EncodingConfig,
-) *Client {
-	return &Client{
-		privKey:        key,
-		txConfig:       txConfig,
-		encodingConfig: encodingConfig,
+func (c *Client) WithChainID(chainID string) {
+	c.clientCtx = c.clientCtx.WithChainID(chainID)
+}
+
+func (c *Client) WithPrivateKey(key cryptotypes.PrivKey) {
+	c.privKey = key
+}
+
+func (c *Client) WithBroadcastMode(mode string) {
+	c.clientCtx = c.clientCtx.WithBroadcastMode(mode)
+}
+
+// CLIENT INSTANTIATION OPTIONS
+
+func ChainID(chainID string) ClientOption {
+	return func(c *Client) {
+		c.WithChainID(chainID)
 	}
 }
 
-func (c *Client) GetTxConfig() *TxConfig {
-	return c.txConfig
+func PrivateKey(key cryptotypes.PrivKey) ClientOption {
+	return func(c *Client) {
+		c.WithPrivateKey(key)
+	}
+}
+
+func BroadcastMode(mode string) ClientOption {
+	return func(c *Client) {
+		c.WithBroadcastMode(mode)
+	}
 }

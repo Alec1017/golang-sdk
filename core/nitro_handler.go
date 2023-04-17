@@ -17,7 +17,7 @@ func (c *Client) SubmitFraudChallenge(
 	gasWanted sdk.Coin,
 ) (*sdk.TxResponse, error) {
 	senderAddr := sdk.AccAddress(c.privKey.PubKey().Address()).String()
-	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
+	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
 	msg := types.MsgSubmitFraudChallenge{
 		Sender:           senderAddr,
 		StartSlot:        startSlot,
