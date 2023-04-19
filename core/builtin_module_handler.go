@@ -22,7 +22,7 @@ func (c *Client) IsProposalHandled(proposalId string) bool {
 }
 
 func (c *Client) Vote(proposalId string) error {
-	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	from := sdk.AccAddress(c.privKey.PubKey().Address())
 	proposalID, err := strconv.ParseUint(proposalId, 10, 64)
 	if err != nil {

@@ -2,13 +2,15 @@ package client
 
 import (
 	"github.com/cosmos/cosmos-sdk/client"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 type Client struct {
-	privKey   cryptotypes.PrivKey
-	clientCtx client.Context
+	privKey        cryptotypes.PrivKey
+	clientCtx      client.Context
+	encodingConfig EncodingConfig
 }
 
 type ClientOption func(c *Client)
@@ -18,20 +20,20 @@ func NewClient(
 	options ...ClientOption,
 ) *Client {
 
-	// create a new client context
-	clientCtx := client.Context{
-		TxConfig: NewTxConfig(),
-	}
+	// create a default encoding config
+	encodingConfig := NewDefaultEncodingConfig()
 
 	// Create a new client
 	client := Client{
-		clientCtx: clientCtx,
+		clientCtx:      client.Context{},
+		encodingConfig: encodingConfig,
 	}
 
 	// set up the client with the node URI and some defaults
 	client.WithNode(node)
 	client.WithBroadcastMode("block")
 	client.WithChainID(DEFAULT_CHAIN_ID)
+	client.WithInterfaceRegistry(encodingConfig.InterfaceRegistry)
 
 	// handle each option passed in
 	for _, option := range options {
@@ -63,6 +65,10 @@ func (c *Client) WithPrivateKey(key cryptotypes.PrivKey) {
 
 func (c *Client) WithBroadcastMode(mode string) {
 	c.clientCtx = c.clientCtx.WithBroadcastMode(mode)
+}
+
+func (c *Client) WithInterfaceRegistry(interfaceRegistry codectypes.InterfaceRegistry) {
+	c.clientCtx = c.clientCtx.WithInterfaceRegistry(interfaceRegistry)
 }
 
 // CLIENT INSTANTIATION OPTIONS

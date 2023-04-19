@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) SendRegisterContract(contractAddr string, codeId uint64, needHook bool) (*sdk.TxResponse, error) {
-	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	msg := dextypes.MsgRegisterContract{
 		Creator: sdk.AccAddress(c.privKey.PubKey().Address()).String(),
 		Contract: &dextypes.ContractInfoV2{
@@ -52,7 +52,7 @@ func (c *Client) RegisterPair(
 	contractAddr string,
 	pairs []*dextypes.Pair,
 ) (*sdk.TxResponse, error) {
-	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	from := sdk.AccAddress(c.privKey.PubKey().Address())
 
 	msg := types.NewMsgRegisterPairs(
@@ -78,7 +78,7 @@ func (c *Client) SendOrder(order FundedOrder, contractAddr string) (dextypes.Msg
 	seiOrder := ToSeiOrderPlacement(order)
 	orderPlacements := []*dextypes.Order{&seiOrder}
 	amount, _ := sdk.ParseCoinsNormalized(order.Fund)
-	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	msg := dextypes.MsgPlaceOrders{
 		Creator:      sdk.AccAddress(c.privKey.PubKey().Address()).String(),
 		Orders:       orderPlacements,
@@ -116,7 +116,7 @@ func (c *Client) SendCancel(
 ) error {
 	seiCancellation := ToSeiCancelOrderPlacement(order)
 	orderCancellations := []*dextypes.Cancellation{&seiCancellation}
-	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	msg := dextypes.MsgCancelOrders{
 		Creator:       sdk.AccAddress(c.privKey.PubKey().Address()).String(),
 		Cancellations: orderCancellations,

@@ -33,7 +33,7 @@ func (c *Client) signTx(txBuilder *client.TxBuilder) error {
 	sigV2 := signing.SignatureV2{
 		PubKey: c.privKey.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  c.clientCtx.TxConfig.SignModeHandler().DefaultMode(),
+			SignMode:  c.encodingConfig.TxConfig.SignModeHandler().DefaultMode(),
 			Signature: nil,
 		},
 		Sequence: seqNum,
@@ -50,11 +50,11 @@ func (c *Client) signTx(txBuilder *client.TxBuilder) error {
 		Sequence:      seqNum,
 	}
 	sigV2, _ = clienttx.SignWithPrivKey(
-		c.clientCtx.TxConfig.SignModeHandler().DefaultMode(),
+		c.encodingConfig.TxConfig.SignModeHandler().DefaultMode(),
 		signerData,
 		*txBuilder,
 		c.privKey,
-		c.clientCtx.TxConfig,
+		c.encodingConfig.TxConfig,
 		seqNum,
 	)
 	sigsV2 = append(sigsV2, sigV2)
@@ -67,7 +67,7 @@ func (c *Client) signTx(txBuilder *client.TxBuilder) error {
 
 func (c *Client) sendTx(txBuilder *client.TxBuilder) (*sdk.TxResponse, error) {
 
-	txBytes, err := c.clientCtx.TxConfig.TxEncoder()((*txBuilder).GetTx())
+	txBytes, err := c.encodingConfig.TxConfig.TxEncoder()((*txBuilder).GetTx())
 	if err != nil {
 		return nil, err
 	}

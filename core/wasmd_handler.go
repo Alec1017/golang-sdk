@@ -19,7 +19,7 @@ func (c *Client) InstantiateContract(
 ) (*sdk.TxResponse, error) {
 
 	// Create a new transaction builder
-	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 
 	// Get the sender address from the private key
 	senderAddr := sdk.AccAddress(c.privKey.PubKey().Address()).String()
@@ -65,7 +65,7 @@ func (c *Client) ExecuteContract(
 ) (*sdk.TxResponse, error) {
 
 	// Create a new transaction builder
-	txBuilder := c.clientCtx.TxConfig.NewTxBuilder()
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 
 	// Get the sender address from the private key
 	senderAddr := sdk.AccAddress(c.privKey.PubKey().Address()).String()
