@@ -58,7 +58,6 @@ func (c *Client) InstantiateContract(
 // Input fund example: "1000usei". Empty string can be passed if this execution doesn't intend to attach any fund.
 func (c *Client) ExecuteContract(
 	contractAddr string,
-	code uint64,
 	executeMsg string,
 	funds sdk.Coins,
 	options ...TxOption,

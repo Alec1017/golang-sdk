@@ -9,7 +9,12 @@ import (
 	dextypes "github.com/sei-protocol/sei-chain/x/dex/types"
 )
 
-func (c *Client) SendRegisterContract(contractAddr string, codeId uint64, needHook bool) (*sdk.TxResponse, error) {
+func (c *Client) SendRegisterContract(
+	contractAddr string,
+	codeId uint64,
+	needHook bool,
+	options ...TxOption,
+) (*sdk.TxResponse, error) {
 	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	msg := dextypes.MsgRegisterContract{
 		Creator: sdk.AccAddress(c.privKey.PubKey().Address()).String(),
@@ -20,11 +25,18 @@ func (c *Client) SendRegisterContract(contractAddr string, codeId uint64, needHo
 			NeedHook:          needHook,
 		},
 	}
-	_ = txBuilder.SetMsgs(&msg)
-	(txBuilder).SetGasLimit(2000000)
-	(txBuilder).SetFeeAmount([]sdk.Coin{
-		sdk.NewCoin("usei", sdk.NewInt(100000)),
-	})
+
+	// set the message on the transaction builder
+	err := txBuilder.SetMsgs(&msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// handle each transaction option passed in
+	for _, option := range options {
+		option(&txBuilder)
+	}
+
 	return c.signAndSendTx(&txBuilder)
 }
 
@@ -51,6 +63,7 @@ func (c *Client) RegisterPair(
 	title string,
 	contractAddr string,
 	pairs []*dextypes.Pair,
+	options ...TxOption,
 ) (*sdk.TxResponse, error) {
 	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	from := sdk.AccAddress(c.privKey.PubKey().Address())
@@ -65,16 +78,25 @@ func (c *Client) RegisterPair(
 		},
 	)
 
-	_ = txBuilder.SetMsgs(msg)
-	(txBuilder).SetGasLimit(2000000)
-	(txBuilder).SetFeeAmount([]sdk.Coin{
-		sdk.NewCoin("usei", sdk.NewInt(10000000)),
-	})
+	// set the message on the transaction builder
+	err := txBuilder.SetMsgs(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// handle each transaction option passed in
+	for _, option := range options {
+		option(&txBuilder)
+	}
 
 	return c.signAndSendTx(&txBuilder)
 }
 
-func (c *Client) SendOrder(order FundedOrder, contractAddr string) (dextypes.MsgPlaceOrdersResponse, error) {
+func (c *Client) SendOrder(
+	order FundedOrder,
+	contractAddr string,
+	options ...TxOption,
+) (dextypes.MsgPlaceOrdersResponse, error) {
 	seiOrder := ToSeiOrderPlacement(order)
 	orderPlacements := []*dextypes.Order{&seiOrder}
 	amount, _ := sdk.ParseCoinsNormalized(order.Fund)
@@ -85,7 +107,18 @@ func (c *Client) SendOrder(order FundedOrder, contractAddr string) (dextypes.Msg
 		ContractAddr: contractAddr,
 		Funds:        amount,
 	}
-	_ = txBuilder.SetMsgs(&msg)
+
+	// set the message on the transaction builder
+	err := txBuilder.SetMsgs(&msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// handle each transaction option passed in
+	for _, option := range options {
+		option(&txBuilder)
+	}
+
 	resp, err := c.signAndSendTx(&txBuilder)
 	if err != nil {
 		return dextypes.MsgPlaceOrdersResponse{}, err
@@ -113,7 +146,8 @@ func (c *Client) SendOrder(order FundedOrder, contractAddr string) (dextypes.Msg
 func (c *Client) SendCancel(
 	order CancelOrder,
 	contractAddr string,
-) error {
+	options ...TxOption,
+) (dextypes.MsgCancelOrdersResponse, error) {
 	seiCancellation := ToSeiCancelOrderPlacement(order)
 	orderCancellations := []*dextypes.Cancellation{&seiCancellation}
 	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
@@ -122,9 +156,38 @@ func (c *Client) SendCancel(
 		Cancellations: orderCancellations,
 		ContractAddr:  contractAddr,
 	}
-	_ = txBuilder.SetMsgs(&msg)
-	// addGasFee(&txBuilder, c.clientCtx.T.gasLimit, c.txConfig.gasFee)
 
-	_, err := c.signAndSendTx(&txBuilder)
-	return err
+	// set the message on the transaction builder
+	err := txBuilder.SetMsgs(&msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// handle each transaction option passed in
+	for _, option := range options {
+		option(&txBuilder)
+	}
+
+	resp, err := c.signAndSendTx(&txBuilder)
+	if err != nil {
+		return dextypes.MsgCancelOrdersResponse{}, err
+	}
+
+	msgResp := sdk.TxMsgData{}
+	respDataBytes, err := hex.DecodeString(resp.Data)
+	if err != nil {
+		return dextypes.MsgCancelOrdersResponse{}, err
+	}
+
+	if err := msgResp.Unmarshal(respDataBytes); err != nil {
+		return dextypes.MsgCancelOrdersResponse{}, err
+	}
+
+	cancelOrderResponse := dextypes.MsgCancelOrdersResponse{}
+	cancelOrderMsgData := msgResp.Data[0].Data
+	if err := cancelOrderResponse.Unmarshal([]byte(cancelOrderMsgData)); err != nil {
+		return cancelOrderResponse, err
+	}
+
+	return cancelOrderResponse, nil
 }
