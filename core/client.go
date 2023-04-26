@@ -4,10 +4,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 )
 
 type Client struct {
+	Account        sdk.AccAddress
 	privKey        cryptotypes.PrivKey
 	clientCtx      client.Context
 	encodingConfig EncodingConfig
@@ -59,8 +61,9 @@ func (c *Client) WithChainID(chainID string) {
 	c.clientCtx = c.clientCtx.WithChainID(chainID)
 }
 
-func (c *Client) WithPrivateKey(key cryptotypes.PrivKey) {
-	c.privKey = key
+func (c *Client) WithPrivateKey(privKey cryptotypes.PrivKey) {
+	c.Account = sdk.AccAddress(privKey.PubKey().Address())
+	c.privKey = privKey
 }
 
 func (c *Client) WithBroadcastMode(mode string) {
