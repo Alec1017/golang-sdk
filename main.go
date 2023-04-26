@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	seiSdk "github.com/sei-protocol/golang-sdk/core"
+	client "github.com/sei-protocol/golang-sdk/client"
 )
 
 func main() {
@@ -22,11 +22,11 @@ func main() {
 	broadcastMode := "block"
 
 	// create sei SDK client
-	seiClient := seiSdk.NewClient(
+	seiClient := client.NewClient(
 		nodeURI,
-		seiSdk.ChainID(chainID),
-		seiSdk.PrivateKey(privKey),
-		seiSdk.BroadcastMode(broadcastMode),
+		client.ChainID(chainID),
+		client.PrivateKey(privKey),
+		client.BroadcastMode(broadcastMode),
 	)
 
 	// create new transaction builder

@@ -1,4 +1,4 @@
-package client
+package utils
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/sei-protocol/golang-sdk/types"
 	dextypes "github.com/sei-protocol/sei-chain/x/dex/types"
 	dextypesutils "github.com/sei-protocol/sei-chain/x/dex/types/utils"
 )
@@ -15,7 +16,7 @@ func SanitizeFilename(filename string) string {
 	return strings.Replace(filename, "_", "", -1)
 }
 
-func asciiDecodeString(s string) []byte {
+func AsciiDecodeString(s string) []byte {
 	return []byte(s)
 }
 
@@ -36,7 +37,7 @@ func GetEventAttributeValue(response sdk.TxResponse, eventType string, attribute
 	panic(fmt.Sprintf("Event %s attribute %s not found", eventType, attributeKey))
 }
 
-func ToSeiOrderPlacement(fundedOrder FundedOrder) dextypes.Order {
+func ToSeiOrderPlacement(fundedOrder types.FundedOrder) dextypes.Order {
 	order := fundedOrder.Order
 	positionDirection, err := dextypesutils.GetPositionDirectionFromStr(order.PositionDirection)
 	if err != nil {
@@ -48,7 +49,7 @@ func ToSeiOrderPlacement(fundedOrder FundedOrder) dextypes.Order {
 	}
 	price := sdk.MustNewDecFromStr(order.Price)
 	quantity := sdk.MustNewDecFromStr(order.Quantity)
-	orderData := OrderData{
+	orderData := types.OrderData{
 		PositionEffect: order.PositionEffect,
 		Leverage:       order.Leverage,
 	}
@@ -68,7 +69,7 @@ func ToSeiOrderPlacement(fundedOrder FundedOrder) dextypes.Order {
 	}
 }
 
-func ToSeiCancelOrderPlacement(cancelOrder CancelOrder) dextypes.Cancellation {
+func ToSeiCancelOrderPlacement(cancelOrder types.CancelOrder) dextypes.Cancellation {
 	order := cancelOrder.Order
 	orderId, err := strconv.ParseUint(order.Id, 10, 64)
 	if err != nil {
@@ -89,10 +90,10 @@ func ToSeiCancelOrderPlacement(cancelOrder CancelOrder) dextypes.Cancellation {
 	}
 }
 
-func ToOrderPlacementExecuteMsg(fundedOrder FundedOrder) []byte {
+func ToOrderPlacementExecuteMsg(fundedOrder types.FundedOrder) []byte {
 	order := ToSeiOrderPlacement(fundedOrder)
-	swapMsg := SwapMulticollateralToBaseMsg{
-		SwapMulticollateralToBase{Orders: []dextypes.Order{order}},
+	swapMsg := types.SwapMulticollateralToBaseMsg{
+		SwapMulticollateralToBase: types.SwapMulticollateralToBase{Orders: []dextypes.Order{order}},
 	}
 	msgString, err := json.Marshal(swapMsg)
 	if err != nil {
@@ -102,8 +103,8 @@ func ToOrderPlacementExecuteMsg(fundedOrder FundedOrder) []byte {
 }
 
 func ToUpdateMultiCollateralWhitelistExecuteMsg(whitelistedAccounts []string) []byte {
-	whitelistedAccountsMsg := UpdateMultiCollateralWhitelistMsg{
-		UpdateMultiCollateralWhitelist{
+	whitelistedAccountsMsg := types.UpdateMultiCollateralWhitelistMsg{
+		UpdateMultiCollateralWhitelist: types.UpdateMultiCollateralWhitelist{
 			Whitelist:       whitelistedAccounts,
 			WhitelistEnable: true,
 		},

@@ -5,6 +5,7 @@ import (
 
 	wasmdtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/sei-protocol/golang-sdk/utils"
 )
 
 // This function takes custom instantiateMsg and instantiates cosmwasm contract
@@ -29,7 +30,7 @@ func (c *Client) InstantiateContract(
 		Sender: senderAddr,
 		CodeID: code,
 		Label:  label,
-		Msg:    asciiDecodeString(instantiateMsg),
+		Msg:    utils.AsciiDecodeString(instantiateMsg),
 		Funds:  funds,
 	}
 
@@ -72,7 +73,7 @@ func (c *Client) ExecuteContract(
 	msg := wasmdtypes.MsgExecuteContract{
 		Sender:   senderAddr,
 		Contract: contractAddr,
-		Msg:      asciiDecodeString(executeMsg),
+		Msg:      utils.AsciiDecodeString(executeMsg),
 		Funds:    funds,
 	}
 
@@ -97,7 +98,7 @@ func (c *Client) QueryContract(queryMsg string, contractAddr string) (*wasmdtype
 		context.Background(),
 		&wasmdtypes.QuerySmartContractStateRequest{
 			Address:   contractAddr,
-			QueryData: asciiDecodeString(queryMsg),
+			QueryData: utils.AsciiDecodeString(queryMsg),
 		},
 	)
 	if err != nil {

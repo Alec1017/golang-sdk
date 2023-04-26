@@ -5,7 +5,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/sei-protocol/sei-chain/x/dex/types"
+	"github.com/sei-protocol/golang-sdk/types"
+	"github.com/sei-protocol/golang-sdk/utils"
 	dextypes "github.com/sei-protocol/sei-chain/x/dex/types"
 )
 
@@ -50,12 +51,12 @@ func (c *Client) RegisterPairAndWaitForApproval(
 		return err
 	}
 
-	proposalId := GetEventAttributeValue(*proposalResp, "submit_proposal", "proposal_id")
+	proposalId := utils.GetEventAttributeValue(*proposalResp, "submit_proposal", "proposal_id")
 	for {
 		if c.IsProposalHandled(proposalId) {
 			return nil
 		}
-		time.Sleep(time.Second * VOTE_WAIT_SECONDS)
+		time.Sleep(time.Second * utils.VOTE_WAIT_SECONDS)
 	}
 }
 
@@ -68,7 +69,7 @@ func (c *Client) RegisterPair(
 	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	from := sdk.AccAddress(c.privKey.PubKey().Address())
 
-	msg := types.NewMsgRegisterPairs(
+	msg := dextypes.NewMsgRegisterPairs(
 		from.String(),
 		[]dextypes.BatchContractPair{
 			{
@@ -93,11 +94,11 @@ func (c *Client) RegisterPair(
 }
 
 func (c *Client) SendOrder(
-	order FundedOrder,
+	order types.FundedOrder,
 	contractAddr string,
 	options ...TxOption,
 ) (dextypes.MsgPlaceOrdersResponse, error) {
-	seiOrder := ToSeiOrderPlacement(order)
+	seiOrder := utils.ToSeiOrderPlacement(order)
 	orderPlacements := []*dextypes.Order{&seiOrder}
 	amount, _ := sdk.ParseCoinsNormalized(order.Fund)
 	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
@@ -144,11 +145,11 @@ func (c *Client) SendOrder(
 }
 
 func (c *Client) SendCancel(
-	order CancelOrder,
+	order types.CancelOrder,
 	contractAddr string,
 	options ...TxOption,
 ) (dextypes.MsgCancelOrdersResponse, error) {
-	seiCancellation := ToSeiCancelOrderPlacement(order)
+	seiCancellation := utils.ToSeiCancelOrderPlacement(order)
 	orderCancellations := []*dextypes.Cancellation{&seiCancellation}
 	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
 	msg := dextypes.MsgCancelOrders{

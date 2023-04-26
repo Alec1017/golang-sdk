@@ -5,6 +5,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/sei-protocol/golang-sdk/utils"
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 )
 
@@ -12,7 +13,7 @@ type Client struct {
 	Account        sdk.AccAddress
 	privKey        cryptotypes.PrivKey
 	clientCtx      client.Context
-	encodingConfig EncodingConfig
+	encodingConfig utils.EncodingConfig
 }
 
 type ClientOption func(c *Client)
@@ -23,7 +24,7 @@ func NewClient(
 ) *Client {
 
 	// create a default encoding config
-	encodingConfig := NewDefaultEncodingConfig()
+	encodingConfig := utils.NewDefaultEncodingConfig()
 
 	// Create a new client
 	client := Client{
@@ -34,7 +35,7 @@ func NewClient(
 	// set up the client with the node URI and some defaults
 	client.WithNode(node)
 	client.WithBroadcastMode("block")
-	client.WithChainID(DEFAULT_CHAIN_ID)
+	client.WithChainID(utils.DEFAULT_CHAIN_ID)
 	client.WithInterfaceRegistry(encodingConfig.InterfaceRegistry)
 
 	// handle each option passed in
