@@ -57,3 +57,29 @@ func (c *Client) GetBankBalance(account string, denom string) sdk.Coin {
 
 	return *res.Balance
 }
+
+func (c *Client) BankSend(
+	toAddr sdk.AccAddress,
+	funds sdk.Coins,
+	options ...TxOption,
+) (*sdk.TxResponse, error) {
+
+	// Create a new transaction builder
+	txBuilder := c.encodingConfig.TxConfig.NewTxBuilder()
+
+	// Construct bank send message
+	msg := banktypes.NewMsgSend(c.Account, toAddr, funds)
+
+	// set the message on the transaction builder
+	err := txBuilder.SetMsgs(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	// handle each transaction option passed in
+	for _, option := range options {
+		option(&txBuilder)
+	}
+
+	return c.signAndSendTx(&txBuilder)
+}
